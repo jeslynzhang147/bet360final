@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Play Kit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f5efe6;
+            --sand: #e8ddd0;
+            --terracotta: #c1440e;
+            --terracotta-light: #e05a24;
+            --forest: #2d4a3e;
+            --forest-light: #3d6b5a;
+            --gold: #d4922a;
+            --gold-light: #e8a93e;
+            --charcoal: #1e2723;
+            --warm-gray: #7a7065;
+            --white: #fff;
+            --item-radius: 12px;
+            --card-radius: 18px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Lora', Georgia, serif;
+            background-color: var(--cream);
+            background-image:
+                radial-gradient(ellipse 90% 70% at 8% 5%,  rgba(255,245,210,0.70) 0%, transparent 55%),
+                radial-gradient(ellipse 70% 55% at 92% 90%, rgba(179,61,13,0.12)  0%, transparent 50%),
+                radial-gradient(ellipse 55% 45% at 55% 50%, rgba(196,174,133,0.35) 0%, transparent 60%);
+            background-attachment: fixed;
+            color: var(--charcoal);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.35;
+        }
+
+        /* ─── SCREENS ─── */
+        .screen { display: none; min-height: 100vh; }
+        .screen.active { display: flex; flex-direction: column; }
+
+        /* ─── LANDING ─── */
+        #landing-screen {
+            align-items: center;
+            justify-content: center;
+            background: var(--forest);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        #landing-screen::after {
+            content: '';
+            position: absolute;
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(212,146,42,0.2) 0%, transparent 70%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .landing-deco {
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.07;
+            pointer-events: none;
+        }
+        .landing-deco.tl { top: -20px; left: -20px; transform: rotate(-20deg); }
+        .landing-deco.br { bottom: -20px; right: -20px; transform: rotate(20deg); }
+
+        .landing-eyebrow {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--gold-light);
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 0.2s forwards;
+        }
+
+        .landing-title {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(3.5rem, 10vw, 7rem);
+            font-weight: 900;
+            color: var(--cream);
+            line-height: 0.95;
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 0.4s forwards;
+        }
+
+        .landing-title em {
+            font-style: italic;
+            color: var(--gold-light);
+        }
+
+        .landing-sub {
+            color: rgba(245,239,230,0.6);
+            font-size: 1rem;
+            max-width: 400px;
+            line-height: 1.6;
+            margin: 0 auto 50px;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 0.6s forwards;
+        }
+
+        .btn-play {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 48px;
+            background: var(--terracotta);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 30px rgba(193,68,14,0.4);
+            opacity: 0;
+            animation: fadeUp 0.8s ease 0.8s forwards;
+        }
+        .btn-play:hover {
+            background: var(--terracotta-light);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(193,68,14,0.5);
+        }
+        .btn-play svg { transition: transform 0.2s; }
+        .btn-play:hover svg { transform: translateX(3px); }
+
+        /* ─── INSTRUCTIONS ─── */
+        #instructions-screen {
+            background: transparent;
+            align-items: center;
+            padding: 80px 20px 100px;
+        }
+
+        .instructions-inner { max-width: 680px; width: 100%; }
+
+        .instructions-inner h1 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 900;
+            color: var(--forest);
+            margin-bottom: 10px;
+        }
+
+        .instructions-inner .sub {
+            color: var(--warm-gray);
+            margin-bottom: 60px;
+            font-size: 1rem;
+            font-style: italic;
+        }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(36px);
+            transition: opacity 0.65s ease, transform 0.65s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* stagger each card */
+        .reveal:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2) { transition-delay: 0.12s; }
+        .reveal:nth-child(3) { transition-delay: 0.19s; }
+        .reveal:nth-child(4) { transition-delay: 0.26s; }
+        .reveal:nth-child(5) { transition-delay: 0.33s; }
+        .reveal:nth-child(6) { transition-delay: 0.40s; }
+        .reveal:nth-child(7) { transition-delay: 0.47s; }
+
+        .step-card {
+            display: flex;
+            gap: 22px;
+            align-items: flex-start;
+            padding: 26px 28px;
+            background: rgba(255,255,255,0.62);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: var(--card-radius);
+            margin-bottom: 14px;
+            border: 1.5px solid rgba(255,255,255,0.85);
+            box-shadow: 0 2px 12px rgba(80,60,20,0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .step-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(80,60,20,0.12); }
+
+        .step-num {
+            flex-shrink: 0;
+            width: 44px; height: 44px;
+            background: var(--forest);
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .step-card h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--forest);
+            margin-bottom: 6px;
+        }
+
+        .step-card p { font-size: 0.9rem; color: var(--warm-gray); line-height: 1.7; }
+        .step-card strong { color: var(--charcoal); }
+
+        .btn-start {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 48px;
+            background: var(--forest);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 40px;
+            transition: all 0.25s;
+            box-shadow: 0 6px 24px rgba(45,74,62,0.3);
+        }
+        .btn-start:hover { background: var(--forest-light); transform: translateY(-2px); }
+
+        /* ─── APP ─── */
+        #app-content {
+            background: var(--cream);
+            align-items: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Header */
+        .app-header {
+            width: 100%;
+            background: var(--forest);
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+        }
+
+        .app-logo {
+            font-family: 'Fraunces', serif;
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--cream);
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            user-select: none;
+        }
+        .app-logo span { color: var(--gold-light); font-style: italic; }
+
+        .header-nav { display: flex; gap: 8px; }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: transparent;
+            color: rgba(245,239,230,0.75);
+            border: 1.5px solid rgba(245,239,230,0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: 'Lora', Georgia, serif;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.4); }
+        .nav-btn.accent { background: var(--terracotta); border-color: var(--terracotta); color: white; }
+        .nav-btn.accent:hover { background: var(--terracotta-light); }
+
+        /* Main wrapper */
+        .app-body {
+            width: 100%;
+            max-width: 1100px;
+            padding: 32px 24px 120px;
+        }
+
+        /* Day subtitle */
+        .day-title-bar {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .day-title-bar h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--forest);
+        }
+        .day-title-bar p {
+            color: var(--warm-gray);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        /* Day tabs */
+        .day-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+
+        .day-tab {
+            padding: 10px 22px;
+            background: white;
+            border: 2px solid var(--sand);
+            border-radius: 100px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--warm-gray);
+            transition: all 0.2s;
+            font-family: 'Lora', Georgia, serif;
+        }
+        .day-tab:hover { border-color: var(--forest); color: var(--forest); }
+        .day-tab.active {
+            background: var(--forest);
+            border-color: var(--forest);
+            color: white;
+        }
+
+        /* Goal card */
+        .goal-card {
+            background: var(--forest);
+            color: white;
+            border-radius: var(--card-radius);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            display: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .goal-card::before {
+            content: '★';
+            position: absolute;
+            right: 24px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 5rem;
+            opacity: 0.07;
+        }
+        .goal-card .goal-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold-light);
+            margin-bottom: 10px;
+        }
+        .goal-card p { font-size: 0.95rem; line-height: 1.7; opacity: 0.9; }
+        .goal-card strong { color: var(--gold-light); }
+
+        /* Build grid */
+        .build-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 700px) {
+            .build-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Materials panel */
+        .materials-panel {
+            background: white;
+            border-radius: var(--card-radius);
+            padding: 22px;
+            border: 1.5px solid var(--sand);
+        }
+
+        .panel-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--forest);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-title::after {
+            content: '';
+            flex: 1;
+            height: 1.5px;
+            background: var(--sand);
+        }
+
+        #item-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+            margin-bottom: 18px;
+        }
+
+        .item {
+            width: 68px;
+            height: 68px;
+            background: var(--cream);
+            border: 2px solid var(--sand);
+            border-radius: var(--item-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            user-select: none;
+            font-size: 2rem;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            position: relative;
+        }
+        .item:hover {
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            border-color: var(--forest-light);
+        }
+        .item:active { cursor: grabbing; }
+
+        .item .tooltip {
+            visibility: hidden;
+            width: max-content;
+            max-width: 140px;
+            background: var(--charcoal);
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            padding: 6px 10px;
+            position: absolute;
+            z-index: 20;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.65rem;
+            font-family: 'Lora', Georgia, serif;
+            font-weight: 500;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .item .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%; left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--charcoal);
+        }
+        .item:hover .tooltip { visibility: visible; opacity: 1; }
+
+        /* Custom item form */
+        .custom-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .custom-form input {
+            flex: 1;
+            padding: 9px 12px;
+            border: 1.5px solid var(--sand);
+            border-radius: 8px;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 0.85rem;
+            background: var(--cream);
+            color: var(--charcoal);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .custom-form input:focus { border-color: var(--forest); }
+        .custom-form input::placeholder { color: var(--warm-gray); }
+        .custom-form button {
+            padding: 9px 16px;
+            background: var(--forest);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .custom-form button:hover { background: var(--forest-light); }
+
+        /* Build zone */
+        .build-zone-wrap {
+            background: white;
+            border-radius: var(--card-radius);
+            border: 2.5px dashed var(--sand);
+            display: flex;
+            flex-direction: column;
+            border: 1.5px solid var(--sand);
+            overflow: hidden;
+        }
+
+        .build-zone-header {
+            padding: 16px 22px;
+            background: var(--cream);
+            border-bottom: 1.5px solid var(--sand);
+            font-family: 'Fraunces', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .build-zone-header .item-count {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--warm-gray);
+            background: var(--sand);
+            padding: 3px 10px;
+            border-radius: 100px;
+        }
+
+        #build-zone {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 10px;
+            padding: 22px;
+            min-height: 260px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        #build-zone.dragover { background: rgba(45,74,62,0.04); }
+
+        .drop-hint {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .drop-hint .drop-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+        .drop-hint p {
+            font-size: 0.85rem;
+            color: var(--warm-gray);
+            font-weight: 500;
+        }
+
+        #build-zone .item {
+            background: var(--forest);
+            border-color: var(--forest);
+            color: white;
+        }
+        #build-zone .item:hover {
+            background: var(--forest-light);
+            border-color: var(--forest-light);
+        }
+
+        /* Build button */
+        .build-btn-wrap {
+            display: none;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        #build-btn {
+            padding: 16px 52px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Lora', Georgia, serif;
+            background: var(--terracotta);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            box-shadow: 0 6px 24px rgba(193,68,14,0.35);
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #build-btn:hover {
+            background: var(--terracotta-light);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 32px rgba(193,68,14,0.45);
+        }
+        #build-btn .btn-icon { font-size: 1.2rem; transition: transform 0.2s; }
+        #build-btn:hover .btn-icon { transform: rotate(10deg); }
+
+        /* Feedback panel */
+        #feedback-panel {
+            background: white;
+            border-radius: var(--card-radius);
+            border: 1.5px solid var(--sand);
+            overflow: hidden;
+            display: none;
+            margin-bottom: 20px;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .feedback-header {
+            padding: 20px 28px;
+            background: var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .feedback-header .result-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(30,39,35,0.6);
+            margin-bottom: 4px;
+        }
+        #result-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--charcoal);
+        }
+        .feedback-star { font-size: 2.5rem; opacity: 0.4; }
+
+        .feedback-body { padding: 24px 28px; }
+
+        #hint-text {
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.75;
+            color: var(--charcoal);
+            margin-bottom: 20px;
+        }
+
+        .care-box {
+            background: var(--cream);
+            border-left: 4px solid var(--forest);
+            border-radius: 0 12px 12px 0;
+            padding: 16px 20px;
+        }
+        .care-box .care-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--forest);
+            margin-bottom: 6px;
+        }
+        .care-box p { font-size: 0.9rem; color: var(--warm-gray); line-height: 1.6; font-style: italic; }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: white;
+            color: var(--terracotta);
+            border: 2px solid var(--terracotta);
+            border-radius: 100px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            font-family: 'Lora', Georgia, serif;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-btn:hover { background: var(--terracotta); color: white; }
+
+        /* ─── WIDGETS (floating) ─── */
+        .float-widget {
+            position: fixed;
+            bottom: 0;
+            background: var(--charcoal);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
+            width: 300px;
+            z-index: 200;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .float-widget.missing-w { right: 24px; }
+        .float-widget.share-w { left: 24px; }
+        .float-widget.closed { transform: translateY(calc(100% - 48px)); }
+
+        .widget-handle {
+            padding: 12px 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--forest);
+            border-radius: 16px 16px 0 0;
+        }
+        .widget-handle span { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.03em; }
+        .widget-handle .toggle-icon { font-size: 0.7rem; opacity: 0.7; transition: transform 0.3s; }
+        .float-widget:not(.closed) .toggle-icon { transform: rotate(180deg); }
+
+        .widget-body { padding: 18px; }
+        .widget-body input,
+        .widget-body textarea {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .widget-body input::placeholder,
+        .widget-body textarea::placeholder { color: rgba(255,255,255,0.4); }
+        .widget-body input:focus,
+        .widget-body textarea:focus { border-color: var(--gold-light); }
+        .widget-body input[type="file"] { padding: 6px; font-size: 0.75rem; }
+
+        .widget-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--terracotta);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: 'Lora', Georgia, serif;
+            transition: background 0.2s;
+        }
+        .widget-btn:hover { background: var(--terracotta-light); }
+
+        .widget-output {
+            margin-top: 12px;
+            font-size: 0.82rem;
+            font-style: italic;
+            color: var(--gold-light);
+            line-height: 1.5;
+        }
+
+        /* ─── MODALS ─── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(30,39,35,0.7);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+
+        .modal-box {
+            background: white;
+            border-radius: 20px;
+            padding: 36px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: fadeUp 0.3s ease;
+        }
+
+        .modal-box h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--forest);
+            margin-bottom: 20px;
+        }
+        .modal-box p {
+            font-size: 0.92rem;
+            line-height: 1.75;
+            color: var(--warm-gray);
+            margin-bottom: 16px;
+        }
+        .modal-box em { color: var(--forest); font-style: italic; }
+        .modal-box strong { color: var(--charcoal); }
+
+        .modal-close-btn {
+            margin-top: 10px;
+            padding: 11px 28px;
+            background: var(--forest);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Lora', Georgia, serif;
+            transition: background 0.2s;
+        }
+        .modal-close-btn:hover { background: var(--forest-light); }
+
+        /* Gallery */
+        #gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .gallery-card {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--cream);
+            border: 1.5px solid var(--sand);
+        }
+        .gallery-card img { width: 100%; height: 130px; object-fit: cover; display: block; }
+        .gallery-card-body { padding: 10px; }
+        .gallery-card-body small { color: var(--warm-gray); font-size: 0.75rem; }
+        .gallery-card-body p { font-size: 0.82rem; color: var(--charcoal); margin-top: 4px; }
+
+        /* Empty state */
+        .empty-state {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 40px;
+            color: var(--warm-gray);
+            font-size: 0.95rem;
+        }
+        .empty-state .empty-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+        /* ─── PRINT ─── */
+        @media print {
+            .app-header, .day-tabs, .float-widget, .build-btn-wrap, .reset-btn { display: none !important; }
+            .build-grid { display: grid !important; }
+            #feedback-panel { display: block !important; }
+            #app-content { display: flex !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ LANDING ═══ -->
+<div id="landing-screen" class="screen active">
+    <div class="landing-deco tl">🎪</div>
+    <div class="landing-deco br">🌿</div>
+    <p class="landing-eyebrow">A Diffuse Design Project</p>
+    <h1 class="landing-title">Open the<br><em>Play Kit</em></h1>
+    <p class="landing-sub">Developmental tools made from everyday household objects — no commercial toys required.</p>
+    <button class="btn-play" onclick="showInstructions()">
+        Get Started
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+</div>
+
+<!-- ═══ INSTRUCTIONS ═══ -->
+<div id="instructions-screen" class="screen">
+    <div class="instructions-inner">
+        <h1 class="reveal">How It Works</h1>
+        <p class="sub reveal">Five easy steps to unlock developmental play at home.</p>
+
+        <div class="step-card reveal">
+            <div class="step-num">1</div>
+            <div>
+                <h3>Select Your Materials</h3>
+                <p>Browse the Materials panel for the day. These are common household objects reimagined as developmental tools. <strong>You're the expert</strong> — use the "Add your own item" box to include anything from your home.</p>
+            </div>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">2</div>
+            <div>
+                <h3>Mix and Match</h3>
+                <p>Drag items into the Build Zone. Experiment with different combinations! <strong>Missing something?</strong> Use the widget in the corner to find a substitute.</p>
+            </div>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">3</div>
+            <div>
+                <h3>Trigger the Experience</h3>
+                <p>Click <strong>Build!</strong> to reveal your Diffuse Design result and Developmental Goals that explain how this helps your child grow.</p>
+            </div>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">4</div>
+            <div>
+                <h3>Encourage Growth</h3>
+                <p>Use the <strong>Parent Prompts</strong> and <strong>Care Lessons</strong> in the Feedback Panel to strengthen bonds and build resilience — without commercial toys.</p>
+            </div>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">5</div>
+            <div>
+                <h3>Share the Magic</h3>
+                <p>Upload a photo of your creation to the <strong>Community Gallery</strong> to inspire other parents in your community!</p>
+            </div>
+        </div>
+
+        <button class="btn-start reveal" onclick="enterApp()">
+            Start Building
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+    </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app-content" class="screen">
+
+    <header class="app-header">
+        <div class="app-logo" onclick="showScreen('landing-screen')">Play<span>Kit</span></div>
+        <nav class="header-nav">
+            <button class="nav-btn" onclick="openGallery()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Gallery
+            </button>
+            <button class="nav-btn" onclick="showInstructions(true)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                How to Use
+            </button>
+            <button class="nav-btn" onclick="openModal('about-modal')">About</button>
+            <button class="nav-btn accent" onclick="window.print()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print
+            </button>
+        </nav>
+    </header>
+
+    <div class="app-body">
+
+        <div class="day-title-bar">
+            <h2 id="day-heading">Choose a Day to Begin</h2>
+            <p id="day-sub">Select a day tab below to load that session's materials and goals.</p>
+        </div>
+
+        <div class="day-tabs">
+            <div class="day-tab" onclick="loadDay('monday', this)">Monday</div>
+            <div class="day-tab" onclick="loadDay('tuesday', this)">Tuesday</div>
+            <div class="day-tab" onclick="loadDay('wednesday', this)">Wednesday</div>
+            <div class="day-tab" onclick="loadDay('thursday', this)">Thursday</div>
+            <div class="day-tab" onclick="loadDay('friday', this)">Friday</div>
+            <div class="day-tab" onclick="loadDay('saturday', this)">Saturday</div>
+            <div class="day-tab" onclick="loadDay('sunday', this)">Sunday</div>
+        </div>
+
+        <div class="goal-card" id="goal-card">
+            <div class="goal-label">Today's Development Goal</div>
+            <p id="goal-text"></p>
+        </div>
+
+        <div class="build-grid" id="build-grid">
+            <div class="materials-panel">
+                <div class="panel-title">Materials</div>
+                <div id="item-container"></div>
+                <div class="custom-form">
+                    <input type="text" id="custom-input" placeholder="Add your own item…">
+                    <button onclick="addCustomItem()">Add</button>
+                </div>
+            </div>
+
+            <div class="build-zone-wrap">
+                <div class="build-zone-header">
+                    Build Zone
+                    <span class="item-count" id="item-count">0 items</span>
+                </div>
+                <div id="build-zone">
+                    <div class="drop-hint" id="drop-hint">
+                        <div class="drop-icon">🏗️</div>
+                        <p>Drag materials here<br>to start building</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="build-btn-wrap" id="build-btn-wrap">
+            <button id="build-btn" onclick="triggerBuild()">
+                <span class="btn-icon">+</span>
+                Build!
+            </button>
+        </div>
+
+        <div id="feedback-panel">
+            <div class="feedback-header">
+                <div>
+                    <div class="result-label">Your Result</div>
+                    <div id="result-title">—</div>
+                </div>
+                <div class="feedback-star">🌟</div>
+            </div>
+            <div class="feedback-body">
+                <div id="hint-text"></div>
+                <div class="care-box">
+                    <div class="care-label">Care Lesson</div>
+                    <p id="care-lesson-text"></p>
+                </div>
+                <button class="reset-btn" onclick="resetArea()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                    Reset Build Zone
+                </button>
+            </div>
+        </div>
+
+    </div><!-- /app-body -->
+
+    <!-- Floating widgets -->
+    <div class="float-widget missing-w closed" id="missing-widget">
+        <div class="widget-handle" onclick="toggleWidget('missing-widget')">
+            <span>Missing an item?</span>
+            <span class="toggle-icon">▲</span>
+        </div>
+        <div class="widget-body">
+            <input type="text" id="missing-input" placeholder="e.g., Broom, Tape…">
+            <button class="widget-btn" onclick="getReplacement()">Find Replacement</button>
+            <div class="widget-output" id="suggestion-output"></div>
+        </div>
+    </div>
+
+    <div class="float-widget share-w closed" id="share-widget">
+        <div class="widget-handle" onclick="toggleWidget('share-widget')">
+            <span>Share Creation!</span>
+            <span class="toggle-icon">▲</span>
+        </div>
+        <div class="widget-body">
+            <input type="file" accept="image/*" id="share-image">
+            <input type="date" id="share-date">
+            <textarea id="share-caption" placeholder="Add a caption…" rows="2" style="resize:none;"></textarea>
+            <button class="widget-btn" onclick="submitShare()">Share to Gallery</button>
+            <div class="widget-output" id="share-output"></div>
+        </div>
+    </div>
+
+</div><!-- /app-content -->
+
+<!-- ─── Modals ─── -->
+<div class="modal-overlay" id="about-modal">
+    <div class="modal-box">
+        <h2>About This Project</h2>
+        <p><strong>The Problem Space:</strong> Play is often viewed as a privilege, and yet it is a necessity to ensure proper early childhood development — fostering cognitive, social-emotional, and regulatory skills in children (Luebbe, 2026; Nwokah et al., 2013). Access to play materials can significantly enhance a child's problem-solving, communication, and personal-social competencies (Wu et al., 2019). However, in under-developed communities, resource scarcity means these materials are often the first items sacrificed. This shortage contributes to developmental delays that risk perpetuating the cycle of poverty (Wu et al., 2019). At the same time, commercial toys have evolved to promote an unhealthy culture of consumerism, reducing toys to a form of social currency (Patico, 2011) — creating an "economy of dignity" where children without popular toys risk social exclusion.</p>
+        <p><strong>Target Audience:</strong> Children and families in under-developed communities who lack the purchasing power for commercial toys but require access to essential developmental tools.</p>
+        <p><strong>The Framework:</strong> Using Ezio Manzini's concept of <em>Diffuse Design</em>, this project addresses market failure by empowering parents — as non-experts — to use resources they already own to solve the problem of play (Manzini, 2015). Rather than relying on expert-designed commercial products, parents and children create play environments from household items, such as kitchen utensils or discarded materials (Weldon, 2012). This builds a more distributed and resilient play ecosystem that removes the financial burden of purchasing new products (Nwokah et al., 2013), while shifting the symbol of parental care from purchasing toys toward guided interaction and play (Zosh et al., 2022).</p>
+
+        <div style="margin-top:28px; padding-top:20px; border-top:1.5px solid var(--sand);">
+            <h3 style="font-family:'Fraunces',serif; font-size:1rem; color:var(--forest); margin-bottom:16px; letter-spacing:0.03em;">References</h3>
+            <div style="font-size:0.78rem; line-height:1.8; color:var(--warm-gray);">
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Luebbe, D. (2026, January 7). <em>The power of play-based learning in early childhood education.</em> Concordia University, Nebraska.</p>
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Manzini, E. (2015). <em>Design, when everybody designs: An introduction to design for social innovation</em> (R. Coad, Trans.).</p>
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Nwokah, E., Hsu, H.-C., &amp; Gulker, H. (2013). The use of play materials in early intervention: The dilemma of poverty. <em>American Journal of Play, 5</em>(2), 187–213.</p>
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Patico, J. (2011). Toys as tools of connection and disconnection: Ethnographic perspectives on children's consumption, inequality, and contemporary cultures of care. <em>Dialectical Anthropology, 35</em>, 195–204. https://doi.org/10.1007/s10624-011-9229-7</p>
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Weldon, L. G. (2024, July 7). <em>The boy with no toys.</em> Laura Grace Weldon.</p>
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Wu, T. C., Shi, H. F., Du, Y. F., Zhang, J. X., Zhao, C. X., Huang, X. N., &amp; Wang, X. L. (2019). Effect of books and toys on early childhood development in poor rural areas of China. <em>Zhonghua er ke za zhi = Chinese Journal of Pediatrics, 57</em>(3), 187–193. https://doi.org/10.3760/cma.j.issn.0578-1310.2019.03.006</p>
+                <p style="padding-left:2em; text-indent:-2em; margin-bottom:8px;">Zosh, J. M., Gaudreau, C., Golinkoff, R. M., &amp; Hirsh-Pasek, K. (2022). The power of playful learning in the early childhood setting. <em>Young Children, 77</em>(2).</p>
+            </div>
+        </div>
+
+        <button class="modal-close-btn" onclick="closeModal('about-modal')">Close</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="gallery-modal">
+    <div class="modal-box" style="max-width:780px;">
+        <h2>Community Gallery</h2>
+        <div id="gallery-grid"></div>
+        <button class="modal-close-btn" onclick="closeModal('gallery-modal')">Close</button>
+    </div>
+</div>
+
+<script>
+    const commonIcons = {
+        tape: `<svg width="1.4em" height="1.4em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M21.5 12h-2.5"/></svg>`,
+        waterBottle: `<svg width="1.4em" height="1.4em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6v3H9z"/><path d="M7 6h10v13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6z"/><path d="M7 10h10M7 14h10"/></svg>`,
+        pasta: `<svg width="1.4em" height="1.4em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8c2 0 2 8 4 8s2-8 4-8 2 8 4 8 2-8 4-8"/></svg>`
+    };
+
+    const playData = {
+        monday: {
+            title: "Day 1: The Spatial Challenge",
+            goal: "<strong>Gross Motor Skills</strong> — Gross motor skills involve large muscle movements and are a necessity to ensure proper early childhood development (Luebbe, 2026). Children build these abilities through active physical interaction with their surrounding environment. Caregivers can foster this without high costs by repurposing everyday household items — a laundry basket, for example, can be intentionally redesigned for dual usage as both a functional tool and a developmental aid (Kavousipor et al., 2016; Nwokah et al., 2013).",
+            items: [
+                { id: "chair", icon: "🪑", count: 4, hint: "Chair — Acts as a wall" },
+                { id: "sheet", icon: "🟦", count: 2, hint: "Blanket — Acts as a roof" },
+                { id: "broom", icon: "🧹", count: 1, hint: "Broom — Structural beam" },
+                { id: "box", icon: "📦", count: 1, hint: "Box — Corner support" },
+                { id: "book", icon: "📚", count: 3, hint: "Books — Anchors" }
+            ]
+        },
+        tuesday: {
+            title: "Day 2: The Acoustic Lab",
+            goal: "<strong>Sensory & Rhythm</strong> — Sensory development and cognitive mapping are actively built through loud, exploratory play using everyday household items like pots, dry rice, and wooden spoons (Nwokah et al., 2013). Creating a makeshift family band allows children to experiment with different auditory pitches and rhythms. This collaborative interaction demonstrates that self-expression is valued — and that guided play is itself an ultimate expression of parental care (Zosh et al., 2022).",
+            items: [
+                { id: "large-pot", icon: "🍲", count: 1, hint: "Large Stainless Steel Pot" },
+                { id: "small-pot", icon: "🥘", count: 1, hint: "Small Stainless Steel Pot" },
+                { id: "bowl", icon: "🥣", count: 1, hint: "Mixing Bowl" },
+                { id: "tupperware", icon: "🥡", count: 1, hint: "Plastic Tupperware" },
+                { id: "wooden-spoon", icon: "🥄", count: 1, hint: "Wooden Spoon" },
+                { id: "plastic-spoon", icon: "🥄", count: 1, hint: "Plastic Spoon" },
+                { id: "whisk", icon: `<svg width="1.4em" height="1.4em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M12 2c-3 0-5 2-5 5c0 3 2 5 5 5s5-2 5-5c0-3-2-5-5-5z"/><path d="M8 8c0-3 2-5 4-5s4 2 4 5c0 3-4 7-4 7S8 11 8 8z"/><path d="M5 9c0-3 3-6 7-6s7 3 7 6c0 4-7 10-7 10S5 13 5 9z"/></svg>`, count: 1, hint: "Whisk" },
+                { id: "rice", icon: "🍚", count: 1, hint: "Dry Rice" },
+                { id: "beans", icon: "🫫", count: 1, hint: "Dry Beans" }
+            ]
+        },
+        wednesday: {
+            title: "Day 3: The Gravity Circuit",
+            goal: "<strong>Cognitive Problem Solving</strong> — Engineering physical pathways, such as a multi-stage chute system made from cardboard rolls and tape, develops problem-solving and spatial reasoning skills (Wu et al., 2019). Testing these gravity circuits introduces trial and error as the fundamental basis of resilience. Caregivers build a child's confidence by celebrating structural failures — creating enriched environments with alternative values that eliminate a child's perceived dependence on commercial goods (Weldon, 2012).",
+            items: [
+                { id: "roll", icon: "🧻", count: 3, hint: "Cardboard TP Roll — Chute" },
+                { id: "tape", icon: commonIcons.tape, count: 1, hint: "Tape — Connector" },
+                { id: "ball", icon: "🎾", count: 1, hint: "Small Ball — Payload" },
+                { id: "socks", icon: "🧦", count: 1, hint: "Rolled Socks — Alternative Payload" },
+                { id: "box", icon: "📦", count: 2, hint: "Cardboard Box — Base" }
+            ]
+        },
+        thursday: {
+            title: "Day 4: The Light Theater",
+            goal: "<strong>Visual Processing & Communication</strong> — Visual tracking and narrative skills are sharpened by manipulating light and shadow. Focusing on moving shapes in a low-light environment strengthens ocular motor control, while creating 'scenes' encourages the translation of abstract shapes into coherent storytelling — a form of guided play that adults can actively scaffold to strengthen the parent-child interaction (Zosh et al., 2022).",
+            items: [
+                { id: "light", icon: "🔦", count: 1, hint: "Flashlight (or phone)" },
+                { id: "box", icon: "📦", count: 1, hint: "Cardboard Box" },
+                { id: "cup", icon: "🥤", count: 2, hint: "Paper Cups" },
+                { id: "tape", icon: commonIcons.tape, count: 1, hint: "Tape" }
+            ]
+        },
+        friday: {
+            title: "Day 5: The Texture Trek",
+            goal: "<strong>Sensory Integration & Fine Motor Control</strong> — Tactile exploration builds the neural pathways necessary for fine motor control and sensory processing (Kavousipor et al., 2016). Categorizing objects by their physical 'feel' helps children organize environmental data and improves their ability to distinguish between different materials — demonstrating how children can be richly stimulated through non-commercial methods (Weldon, 2012).",
+            items: [
+                { id: "tin", icon: `<svg width="1.4em" height="1.4em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>`, count: 1, hint: "Muffin Tin (or 6 bowls)" },
+                { id: "cotton", icon: "☁️", count: 1, hint: "Cotton Balls" },
+                { id: "pasta", icon: commonIcons.pasta, count: 1, hint: "Pasta" },
+                { id: "sponge", icon: "🧽", count: 1, hint: "Sponge" },
+                { id: "fabric", icon: "👕", count: 1, hint: "Fabric Scraps" },
+                { id: "leaves", icon: "🍃", count: 1, hint: "Leaves" },
+                { id: "stones", icon: "🪨", count: 1, hint: "Stones" }
+            ]
+        },
+        saturday: {
+            title: "Day 6: The Weightless Fleet",
+            goal: "<strong>Physical Science & Self-Regulation</strong> — Water play is a natural laboratory for exploring fluid dynamics (Nwokah et al., 2013). Controlling breath to move objects is a hidden exercise in self-regulation, requiring children to manage their physical output to achieve a specific mechanical result — an early form of the executive function skills foundational to later learning (Zosh et al., 2022).",
+            items: [
+                { id: "basin", icon: "🥣", count: 1, hint: "Large Basin (or sink)" },
+                { id: "bottle", icon: commonIcons.waterBottle, count: 3, hint: "Water Bottles" },
+                { id: "paper", icon: "📄", count: 2, hint: "Paper Scraps" },
+                { id: "straw", icon: "🥤", count: 1, hint: "Straw (or rolled paper)" }
+            ]
+        },
+        sunday: {
+            title: "Day 7: The Memory Museum",
+            goal: "<strong>Cognitive Reflection & Self-Identity</strong> — Reflecting on shared experiences strengthens long-term memory and builds a child's sense of self (Luebbe, 2026). By curating their own 'history,' children learn to value their creative labor and articulate their feelings about their accomplishments — shifting the symbol of care from purchased objects to shared time (Hamlin, 2023; Patico, 2011).",
+            items: [
+                { id: "jar", icon: `<svg width="1.4em" height="1.4em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="4"/><path d="M5 8v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-2-2H7l-2 2z"/></svg>`, count: 1, hint: "Jar (or box)" },
+                { id: "artifact", icon: "✨", count: 5, hint: "A memorable item from the week" },
+                { id: "pencil", icon: "✏️", count: 1, hint: "Pencil & Paper" }
+            ]
+        },
+        performance: {
+            monday: (built) => {
+                if (built.has('chair') && built.has('sheet') && built.has('broom')) return ["Result: Mega-Tent | Time: 45+ min", "Incredible! Basecamp established. This structure functions as an enclosed, low-stimulation environment. Children can use the interior volume to simulate hibernation, establish a secure basecamp, or engage in quiet flashlight-based observation — all supporting sensory regulation and spatial awareness (Kavousipor et al., 2016).", "Household items like baskets or furniture can be intentionally redesigned for dual usage, serving as both functional tools and developmental aids (Kavousipor et al., 2016; Nwokah et al., 2013)."];
+                if (built.has('chair') && built.has('sheet')) return ["Result: Basic Cave | Time: 15 min", "This structure serves as a functional physical boundary. Children can use the enclosed area as a bear den, a hiding spot, or a low-stimulation zone for reading and quiet observation — supporting the regulatory development that underpins later academic success (Wu et al., 2019).", "Household items like baskets or furniture can be intentionally redesigned for dual usage, serving as both functional tools and developmental aids (Kavousipor et al., 2016; Nwokah et al., 2013)."];
+                return ["Result: Needs Structure", 'Combine walls (chairs) and roofs (sheets). Ask: "Is the fort sturdy? Do we need heavier objects to hold the blanket in place?"\n\n"Let\'s check how much space we have inside. How can we make it bigger?"', "Identifying the purpose of different objects is the first step in diffuse design — empowering you as the expert of your home (Manzini, 2015)."];
+            },
+            tuesday: (built) => {
+                if (built.has('large-pot') && built.has('wooden-spoon') && built.has('tupperware') && (built.has('rice') || built.has('beans'))) return ["Result: The Family Band | Time: 30+ min", "You have drums and varied resonators! Put the rice in the tupperware to make a shaker. Coordinating multiple acoustic materials demands collaborative timing and active listening from both parent and child. Organizing these distinct sounds into a structured rhythm directly develops executive function and auditory discrimination (Zosh et al., 2022).", "Guided play, where adults actively scaffold the learning process, is an ultimate expression of care and interaction — far more valuable than any purchased instrument (Zosh et al., 2022)."];
+                if (built.has('large-pot') && built.has('wooden-spoon')) return ["Result: Basic Drumming | Time: 10 min", "Basic drumming develops essential hand-eye coordination and motor control as children learn to regulate the timing and force of their strikes. It also introduces early cognitive processing through rhythm and pattern recognition — foundational building blocks for math and language skills (Luebbe, 2026).", "Loud play is sensory development. Children can be richly stimulated through non-commercial methods (Weldon, 2012)."];
+                if (built.has('tupperware') && (built.has('rice') || built.has('beans'))) return ["Result: Homemade Shaker | Time: 10 min", "Put the rice in the tupperware and shake! Experimenting with fill levels changes the pitch, teaching early auditory discrimination — a key sensory milestone (Nwokah et al., 2013).", "Guided play acts as an ultimate expression of care (Zosh et al., 2022)."];
+                return ["Result: Tuning up", `Need help encouraging your child? Try asking these:\n"Hit the large pot and the small pot. Do they sound the same or different?"\n"What happens to the sound if you use a wooden spoon instead of a plastic one?"\n"Shake the container with a little bit of rice, then with a lot. Which one is louder?"`, "Instruments require two parts interacting to make a sound — just like development requires a child and a caregiver (Zosh et al., 2022)."];
+            },
+            wednesday: (built) => {
+                const hasPayload = built.has('ball') || built.has('socks');
+                if (built.has('roll') && built.has('tape') && hasPayload && built.has('box')) return ["Result: Multi-Stage Marble Run | Time: 60+ min", "A full circuit! Through this activity, children engage in iterative design by testing gravitational potential and kinetic energy transitions. They develop spatial reasoning and problem-solving skills as they calibrate angles and structural supports — directly building the cognitive competencies linked to academic success (Wu et al., 2019).", "Creating enriched environments with alternative values eliminates a child's perceived dependence on commercial goods (Weldon, 2012)."];
+                if (built.has('roll') && built.has('tape')) return ["Result: Basic Drop | Time: 20 min", "This basic configuration establishes a gravity-fed transit route for a payload. Children engineer and test the acceleration of various objects, introducing the principles of static friction and slope gradients through trial and error (Nwokah et al., 2013).", "Trial and error is the foundation of resilience — and resilience is what breaks the cycle of poverty (Wu et al., 2019)."];
+                return ["Result: Gathering Materials", `You need a path, an anchor, and a payload. Try asking these prompts: \n\n"What can we use to hold the top of the track so it stays put?"\n"How can we make the ramp longer to change how fast the object rolls?"\n"Let's find something heavier to send down the path. What should we test next?"`, "Every machine starts as individual parts — just as every skill starts with a single attempt (Manzini, 2015)."];
+            },
+            thursday: (built) => {
+                if (built.has('light') && built.has('box') && built.has('cup')) return ["Result: Shadow Theater | Time: 45+ min", "A full theater! Scripting and performing a story develops emotional literacy and sequencing skills, as children must organize a beginning, middle, and end. This is a powerful form of guided play that adults can actively scaffold to strengthen the parent-child bond (Zosh et al., 2022).", "Storytelling in the dark reduces sensory overload and creates a focused connection between caregiver and child (Zosh et al., 2022)."];
+                if (built.has('light') && built.has('cup')) return ["Result: Star Projector | Time: 30 min", "Poking holes in cups projects light patterns onto walls. This introduces basic geometry and optics, teaching children how light travels and interacts with barriers — rich cognitive stimulation achievable with freely available materials (Weldon, 2012).", "Using light to transform a room teaches imagination as a tool for change."];
+                return ["Result: Basic Shadow Play | Time: 15 min", 'Look at how the shadow grows when we move the light closer! Ask: "Can you make the box look like a mountain?"\n"What happens if we put your hand in front of the light?"', "Visual tracking builds ocular motor control — a skill foundational to reading and communication (Kavousipor et al., 2016)."];
+            },
+            friday: (built) => {
+                if (built.has('tin') && built.size >= 5) return ["Result: Sensory Path | Time: 30+ min", "Categorizing items from 'roughest to smoothest' develops early mathematical logic and the ability to recognize patterns and gradients in the physical world. Sharing these discoveries validates a child's curiosity and builds personal-social competencies (Wu et al., 2019).", "Sharing these discoveries validates a child's curiosity about the world (Wu et al., 2019)."];
+                if (built.has('tin') && built.size >= 3) return ["Result: Texture Match | Time: 20 min", "Identifying textures without sight forces the brain to rely on tactile feedback, strengthening the somatosensory system and improving descriptive vocabulary — core components of communication development (Kavousipor et al., 2016).", "Encouraging children to touch, feel, and learn without fear builds fine motor control (Nwokah et al., 2013)."];
+                return ["Result: Touch-and-Feel | Time: 10 min", 'Close your eyes! Ask: "Is this scratchy or smooth?"\n"Does it feel heavy or light?"\n"What else in this room feels just like this?"', "Tactile awareness builds fine motor control and sensory processing — essential early milestones (Kavousipor et al., 2016)."];
+            },
+            saturday: (built) => {
+                if (built.has('basin') && built.has('bottle') && built.has('paper') && built.has('straw')) return ["Result: Naval Race | Time: 40+ min", "Using a straw to propel boats requires precise breath control and lip rounding — the same motor skills needed for complex speech development. This is also a hidden exercise in self-regulation, as children must manage their physical output to achieve a specific result (Zosh et al., 2022).", "Regulating breath to move a boat is an exercise in focus and self-regulation (Zosh et al., 2022)."];
+                if (built.has('basin') && built.has('bottle') && built.has('paper')) return ["Result: Constructing Sails | Time: 25 min", "Experimenting with surface area and buoyancy shows children how different shapes interact with water — rich problem-solving and early scientific reasoning achievable with freely available materials (Nwokah et al., 2013).", "Gentle persistence is more effective than force — a lesson in resilience (Nwokah et al., 2013)."];
+                return ["Result: Splash Lab | Time: 15 min", 'Why does the object stay on top? Ask: "What happens if we push it down?"\n"Can you make waves without using your hands?"', "Fluid dynamics is a physical science lesson available in every home (Weldon, 2012)."];
+            },
+            sunday: (built) => {
+                const bz = document.getElementById('build-zone');
+                const artifacts = Array.from(bz.querySelectorAll('.item')).filter(i => i.dataset.type === 'artifact');
+                if (built.has('jar') && built.has('artifact') && built.has('pencil')) return ["Result: Guided Museum Tour | Time: 50+ min", "Acting as a 'museum guide' builds public speaking confidence and reinforces the week's lessons through active recall. This shifts the symbol of care from purchased objects to shared time and guided interaction — the true expression of parental love (Hamlin, 2023; Zosh et al., 2022).", "By treating these 'scraps' as treasures, you tell your child that the time you spent together is the most valuable resource in the home — decoupling love from consumerism (Patico, 2011)."];
+                if (built.has('jar') && artifacts.length >= 3) return ["Result: Time Capsule Assembly | Time: 35 min", "Selecting specific items to 'save' requires evaluative thinking, as the child decides what was most meaningful. This develops cognitive reflection and a sense of self-identity that supports long-term resilience (Luebbe, 2026).", "By treating these 'scraps' as treasures, you tell your child that the time you spent together is the most valuable resource in the home — decoupling love from consumerism (Patico, 2011)."];
+                if (built.has('jar') && built.has('pencil')) return ["Result: Simple Drawing Session | Time: 20 min", "Which was your favourite game this week? Can you draw a picture of the giant fort we built? What should we call our museum?", "By treating these 'scraps' as treasures, you tell your child that the time you spent together is the most valuable resource in the home — decoupling love from consumerism (Patico, 2011)."];
+                return ["Result: Gathering Memories", 'Draw your favourite game! Ask: "What should we call our museum?"\n"Which build was the best?"', "Cognitive reflection strengthens long-term memory and builds a child's sense of self (Luebbe, 2026)."];
+            }
+        }
+    };
+
+    let currentDay = '';
+    let builtItems = new Set();
+    let sharedCreations = [];
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function showInstructions(fromApp = false) {
+        showScreen('instructions-screen');
+        window._fromApp = fromApp;
+        // Reset then trigger reveals after paint
+        document.querySelectorAll('#instructions-screen .reveal').forEach(el => el.classList.remove('visible'));
+        requestAnimationFrame(() => setTimeout(initReveal, 60));
+    }
+
+    function initReveal() {
+        const items = document.querySelectorAll('#instructions-screen .reveal');
+        if ('IntersectionObserver' in window) {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+            }, { threshold: 0.12 });
+            items.forEach(el => obs.observe(el));
+        } else {
+            items.forEach(el => el.classList.add('visible'));
+        }
+    }
+
+    function enterApp() {
+        showScreen('app-content');
+    }
+
+    function loadDay(dayKey, tabEl) {
+        currentDay = dayKey;
+        document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+        if (tabEl) tabEl.classList.add('active');
+
+        const data = playData[dayKey];
+        document.getElementById('day-heading').textContent = data.title;
+        document.getElementById('day-sub').textContent = 'Drag materials into the Build Zone, then click Build!';
+
+        const goalCard = document.getElementById('goal-card');
+        document.getElementById('goal-text').innerHTML = data.goal;
+        goalCard.style.display = 'block';
+
+        document.getElementById('build-grid').style.display = 'grid';
+        document.getElementById('build-btn-wrap').style.display = 'flex';
+
+        resetArea();
+        renderInventory(data.items);
+    }
+
+    function renderInventory(items) {
+        const container = document.getElementById('item-container');
+        container.innerHTML = '';
+        items.forEach(itemDef => {
+            for (let i = 0; i < itemDef.count; i++) {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.id = `${itemDef.id}-${i}`;
+                div.dataset.type = itemDef.id;
+                div.draggable = true;
+                div.innerHTML = `${itemDef.icon}<span class="tooltip">${itemDef.hint}</span>`;
+                div.addEventListener('dragstart', e => e.dataTransfer.setData('text', e.target.id));
+                container.appendChild(div);
+            }
+        });
+    }
+
+    function updateItemCount() {
+        const bz = document.getElementById('build-zone');
+        const count = bz.querySelectorAll('.item').length;
+        document.getElementById('item-count').textContent = `${count} item${count !== 1 ? 's' : ''}`;
+        document.getElementById('drop-hint').style.display = count === 0 ? 'block' : 'none';
+    }
+
+    function resetArea() {
+        builtItems.clear();
+        document.getElementById('feedback-panel').style.display = 'none';
+        const bz = document.getElementById('build-zone');
+        bz.querySelectorAll('.item').forEach(item => {
+            const ic = document.getElementById('item-container');
+            if (ic) ic.appendChild(item);
+        });
+        updateItemCount();
+    }
+
+    const bz = document.getElementById('build-zone');
+    bz.addEventListener('dragover', e => { e.preventDefault(); bz.classList.add('dragover'); });
+    bz.addEventListener('dragleave', () => bz.classList.remove('dragover'));
+    bz.addEventListener('drop', e => {
+        e.preventDefault();
+        bz.classList.remove('dragover');
+        const id = e.dataTransfer.getData('text');
+        const el = document.getElementById(id);
+        if (el && el.parentElement !== bz) {
+            bz.appendChild(el);
+            builtItems.add(el.dataset.type);
+            document.getElementById('feedback-panel').style.display = 'none';
+            updateItemCount();
+        }
+    });
+
+    const ic = document.getElementById('item-container');
+    ic.addEventListener('dragover', e => e.preventDefault());
+    ic.addEventListener('drop', e => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text');
+        const el = document.getElementById(id);
+        if (el && el.parentElement !== ic) {
+            ic.appendChild(el);
+            builtItems.clear();
+            bz.querySelectorAll('.item').forEach(i => builtItems.add(i.dataset.type));
+            document.getElementById('feedback-panel').style.display = 'none';
+            updateItemCount();
+        }
+    });
+
+    function triggerBuild() {
+        const panel = document.getElementById('feedback-panel');
+        panel.style.display = 'block';
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        if (builtItems.size === 0) {
+            updateFeedback("Nothing to build with!", "Drag some materials from the panel on the left into the Build Zone first, then click Build!", "Every great invention starts with gathering your materials.");
+            return;
+        }
+
+        if (builtItems.has('custom')) {
+            updateFeedback("Result: Prototype", "Custom item used! You are acting as the expert of your home.", "Intentional time is the most valuable resource.");
+            return;
+        }
+
+        const evalFn = playData.performance[currentDay];
+        if (typeof evalFn === 'function') {
+            const [title, hint, lesson] = evalFn(builtItems);
+            updateFeedback(title, hint, lesson);
+        }
+    }
+
+    function updateFeedback(title, hint, lesson) {
+        document.getElementById('result-title').textContent = title;
+        document.getElementById('hint-text').textContent = hint;
+        document.getElementById('care-lesson-text').textContent = lesson;
+    }
+
+    function toggleWidget(id) {
+        document.getElementById(id).classList.toggle('closed');
+    }
+
+    function getReplacement() {
+        const val = document.getElementById('missing-input').value.toLowerCase();
+        const out = document.getElementById('suggestion-output');
+        let s = "Look for something similar in shape or weight!";
+        if (val.includes("broom")) s = "Try a mop handle or long cardboard tube.";
+        if (val.includes("box")) s = "Try a laundry basket or open drawer.";
+        if (val.includes("tape")) s = "Try lean-to structures or use heavy books to pin items down.";
+        if (val.includes("roll")) s = "Try rolled-up magazines or paper.";
+        out.textContent = "💡 " + s;
+    }
+
+    function addCustomItem() {
+        const input = document.getElementById('custom-input');
+        const val = input.value.trim();
+        if (!val) return;
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.dataset.type = 'custom';
+        div.draggable = true;
+        div.id = 'custom-' + Date.now();
+        div.innerHTML = `✨<span class="tooltip">${val}</span>`;
+        div.addEventListener('dragstart', e => e.dataTransfer.setData('text', div.id));
+        document.getElementById('item-container').appendChild(div);
+        input.value = '';
+    }
+
+    function submitShare() {
+        const f = document.getElementById('share-image');
+        const d = document.getElementById('share-date').value;
+        const c = document.getElementById('share-caption').value;
+        const out = document.getElementById('share-output');
+        if (!f.files[0]) { out.textContent = "Please add an image first!"; return; }
+        const r = new FileReader();
+        r.onload = e => {
+            sharedCreations.push({ src: e.target.result, date: d, cap: c });
+            out.textContent = "✨ Shared to gallery!";
+            setTimeout(() => { out.textContent = ""; f.value = ""; toggleWidget('share-widget'); }, 1800);
+        };
+        r.readAsDataURL(f.files[0]);
+    }
+
+    function openGallery() {
+        const g = document.getElementById('gallery-grid');
+        if (sharedCreations.length === 0) {
+            g.innerHTML = '<div class="empty-state"><span class="empty-icon">📸</span>No shared projects yet. Be the first!</div>';
+        } else {
+            g.innerHTML = '';
+            sharedCreations.forEach(item => {
+                g.innerHTML += `<div class="gallery-card"><img src="${item.src}" alt="creation"><div class="gallery-card-body"><small>${item.date}</small><p>${item.cap}</p></div></div>`;
+            });
+        }
+        openModal('gallery-modal');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // Close modals on backdrop click
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+    });
+</script>
+</body>
+</html>
